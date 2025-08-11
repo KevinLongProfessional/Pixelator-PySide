@@ -1,6 +1,6 @@
 import sys
 import math
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QFileDialog, QLabel, QSlider, QApplication
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QFileDialog, QLabel, QSlider, QApplication, QSpinBox
 from PySide6.QtOpenGLWidgets import QOpenGLWidget
 from PySide6.QtGui import QPixmap, QImage
 from PySide6 import QtCore
@@ -15,22 +15,39 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("My App")
 
+         #set constant for image to take up 90% of width to prevent resizing bug.
+        self.imageWidthRatio = 0.9
+
+        #set default pixelization ratio to 1.0.
+        self.pixelRatio = 1
+
         layout = QVBoxLayout()
 
-        #to do: add another button that pastes from clipboard or allow ctrl v somehow.
+        self.inputWidget = QWidget()
+        self.inputWidget.setMaximumHeight(200)
+        inputLayout = QVBoxLayout(self.inputWidget)
+        layout.addWidget(self.inputWidget)
+
         button = QPushButton("Select Picture")
         button.setCheckable(True)
         button.clicked.connect(self.file_dialog_button_pressed)
         button.setChecked(self.button_is_checked)
-        layout.addWidget(button)
+        inputLayout.addWidget(button)
 
         copyToClipboardButton = QPushButton("Copy To Clipboard")
         copyToClipboardButton.clicked.connect(self.copy_to_clipboard_button_pressed)
-        layout.addWidget(copyToClipboardButton)
+        inputLayout.addWidget(copyToClipboardButton)
 
         pasteFromClipboardButton = QPushButton("Paste From Clipboard")
         pasteFromClipboardButton.clicked.connect(self.paste_from_clipboard_button_pressed)
-        layout.addWidget(pasteFromClipboardButton)
+        inputLayout.addWidget(pasteFromClipboardButton)
+
+        sliderContainerLayout  = QHBoxLayout()
+        inputLayout.addLayout(sliderContainerLayout)
+
+        percentInputLabel = QLabel(self)
+        percentInputLabel.setText("Pixelation")
+        sliderContainerLayout.addWidget(percentInputLabel)
 
         self.slider = QSlider(Qt.Horizontal);
         self.slider.valueChanged.connect(self.on_slider_value_changed)
@@ -38,25 +55,46 @@ class MainWindow(QMainWindow):
         self.slider.setMaximum(100)
         self.slider.setTickInterval(1)
         self.slider.setValue(100)
+        sliderContainerLayout.addWidget(self.slider)
 
-        layout.addWidget(self.slider)
+        self.percentInput = QSpinBox()
+        self.percentInput.setRange(0, 100) # Sets the range for the spin box
+        self.percentInput.setValue(100)
+        sliderContainerLayout.addWidget(self.percentInput)
+        self.percentInput.textChanged.connect(self.percent_input_changed)
 
         central_widget = QWidget()
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
         self.layout = layout
-
+        
+    def showEvent(self, event):
+        #setup initial test image.
         self.pictureLabel = QLabel(self)
         self.layout.addWidget(self.pictureLabel)
         self.useImage("./testTiger.png")
+        self.setScalePix()
+
+    def resizeEvent(self, event):
+        if hasattr(self, "pix"):
+            self.setScalePix()
+
+        #base resize.
+        super().resizeEvent(event)
 
     def useImage(self, imagepath):
         self.pix = QPixmap(imagepath)
         window_size = self.size()
-        self.scalepix = self.pix.scaled(window_size.width(), window_size.height() * 0.8, QtCore.Qt.KeepAspectRatio) 
-        
+        self.scalepix = self.pix.scaled(window_size.width() * self.imageWidthRatio, window_size.height() - self.inputWidget.size().height(), QtCore.Qt.KeepAspectRatio) 
+
         self.pictureLabel.setPixmap(QPixmap(self.scalepix))
     
+    def percent_input_changed(self, value):
+        self.on_slider_value_changed(int(value))
+
+    def update_percent_value(self, value):
+        self.percentInput.setValue(value)
+        self.slider.setValue(value)
 
     def file_dialog_button_pressed(self, checked):
         fname = QFileDialog.getOpenFileName(self, 'Open file', 
@@ -80,20 +118,21 @@ class MainWindow(QMainWindow):
         clipboard.setPixmap(self.scalepix)
 
     def on_slider_value_changed(self, value):
-            print(value)
-            print((self.size()))
+        if hasattr(self, "pix"):
             self.pixelRatio = value / 100;
-            width = max(1, self.pix.width() * self.pixelRatio)
-            height = max(1, self.pix.height() * self.pixelRatio)
-            pixelatedImage = self.pix.scaled(width, height, QtCore.Qt.KeepAspectRatio) 
-            
-            window_width = self.size().width()
-            window_height = self.size().height() * 0.8
+            self.setScalePix()
 
-            self.scalepix = pixelatedImage.scaled(window_width, window_height, QtCore.Qt.KeepAspectRatio) 
-            self.pictureLabel.setPixmap(QPixmap(self.scalepix))
-            print((self.size()))
+            self.update_percent_value(value)
 
+    def setScalePix(self):
+        width = max(1, self.pix.width() * self.pixelRatio)
+        height = max(1, self.pix.height() * self.pixelRatio)
+        self.pixelatedImage = self.pix.scaled(width, height, QtCore.Qt.KeepAspectRatio) 
+        pixelatedimage_width = max(500, self.size().width() * self.imageWidthRatio)
+        pixelatedimage_height = max(500, self.size().height() - self.inputWidget.size().height())
+
+        self.scalepix = self.pixelatedImage.scaled(pixelatedimage_width, pixelatedimage_height, QtCore.Qt.KeepAspectRatio) 
+        self.pictureLabel.setPixmap(QPixmap(self.scalepix))
 
 app = QApplication(sys.argv)
 
