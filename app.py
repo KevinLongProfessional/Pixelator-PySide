@@ -1,8 +1,6 @@
 import sys
-import math
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QFileDialog, QLabel, QSlider, QApplication, QSpinBox
-from PySide6.QtOpenGLWidgets import QOpenGLWidget
-from PySide6.QtGui import QPixmap, QImage
+from PySide6.QtGui import QPixmap
 from PySide6 import QtCore
 from PySide6.QtCore import Qt
 
