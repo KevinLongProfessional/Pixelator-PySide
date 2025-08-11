@@ -11,7 +11,7 @@ class MainWindow(QMainWindow):
 
         self.button_is_checked = True
 
-        self.setWindowTitle("My App")
+        self.setWindowTitle("Pixelator")
 
          #set constant for image to take up 90% of width to prevent resizing bug.
         self.imageWidthRatio = 0.9
@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
         self.layout = layout
-        
+
         self.pictureLabel = QLabel(self)
         self.layout.addWidget(self.pictureLabel)
         
