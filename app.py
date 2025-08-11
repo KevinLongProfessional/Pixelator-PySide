@@ -66,10 +66,12 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         self.layout = layout
         
-    def showEvent(self, event):
-        #setup initial test image.
         self.pictureLabel = QLabel(self)
         self.layout.addWidget(self.pictureLabel)
+        
+    def showEvent(self, event):
+        #setup initial test image.
+
         self.useImage("./testTiger.png")
         self.setScalePix()
 
